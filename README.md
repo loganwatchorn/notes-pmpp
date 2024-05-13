@@ -1,0 +1,1 @@
+A central location for my notes & exercises on the textbook "Programming Massively Parallel Processes" by Hwu, Kirk, Hajj.
