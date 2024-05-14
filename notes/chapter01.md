@@ -1,1 +1,46 @@
 # Chapter 1: Introduction
+Over the decades, CPU clock speeds have become faster and faster, meaning more operations per second (throughput). We're now at a point where the clock speed can't get much faster, because we're already dissipating as much heat as we can.
+
+The workaround we've used is to have several processor cores in a CPU, computing separate independent tasks, or **threads**, at the same time.
+
+But what do we do when we have thousands, millions, or quadrillions of threads to compute at the same time? We call this a **parallel program**, and it's what GPUs were invented for.
+
+## 1.1 Heterogeneous parallel computing
+
+### GPUs vs. CPUs
+Two trajectories of microprocessor design:
+- **multicore**: focuses on execution speed of several separate single-threaded programs each running on a separate core
+    - ARM Ampere has 128 cores
+- **many-thread**: focuses on execution throughput of a parallel application with orders of magnitude more threads
+    - NVIDIA A100
+        - 9.7 TFLOPS for 64b double-precision floating-point
+        - 156 TFLOPS for 32b single-precision floating-point
+        - 312 TFLOPS for 16b half-precision floating-point
+
+Why is there such a large throughput difference between the two architectures?
+
+CPUs speed up individual arithmetic operations by using more space and energy. They feature:
+- "Arithmetic Logic Units" (ALU), large and power-hungry, but fast
+- A large "last-level cache" storing frequently-called memory addresses, saving long-latency calls to DRAM.
+
+GPUs have a smaller cache. The arithmetic units are slower, but use less space and energy. Because of this, a GPU with the same size as a CPU will be fit many more arithmetic units and require less energy per operation.
+
+GPUs also need to read and update a significantly large number of DRAM addresses so that the application can access computed values (e.g. rgb values to send to screen pixels)
+
+|             | CPU                           | GPU                           |
+|-------------|-------------------------------|-------------------------------|
+| ALU         | Large, power-hungry, fast, fewer | Smaller, less power, slower, far more numerous |
+| Cache       | Huge                          | Small                         |
+| DRAM access | Limited by legacy system requirements | More memory channels = ~10x CPU bandwith     |
+
+Two ways to double the operation rate
+- Doubling throughput: 2x number of AUs = 2x area + 2x power consumption
+- Halving latency: 2x current = 2x area + 4x power
+
+### CUDA
+**Compute Unified Device Architecture (CUDA)** was invented by NVIDIA in 2007, and consists of the programming language as well as a modified hardware architecture for running it. Before CUDA, graphics chips required graphics libraries like OpenGL to be programmed, meaning you would have to frame your parallel computation so that matrices are a grid of pixels.
+
+Some tasks will run far slower on GPUs than CPUs. Because of this, CUDA code runs on both the GPU and the CPU.
+
+### FPGAs
+Field-programmable gate arrays (FPGA) are another type of device which have been used for parallel computing, particularly for networking.
