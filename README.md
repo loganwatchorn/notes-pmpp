@@ -12,7 +12,7 @@ Happy learning!
 # Table of Contents
 
 0. [Preface](./notes/chapter00.md)
-1. Intro
+1. [Intro](./notes/chapter01.md)
 ### Part I: Fundamental Concepts
 2. Heterogeneous data parallel computing
 3. Multidimensional grids and data
