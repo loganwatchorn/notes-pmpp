@@ -44,3 +44,21 @@ Some tasks will run far slower on GPUs than CPUs. Because of this, CUDA code run
 
 ### FPGAs
 Field-programmable gate arrays (FPGA) are another type of device which have been used for parallel computing, particularly for networking.
+
+
+## 1.2 Why more speed or parallelism?
+Expands capabilities in several domains.
+- Biology: allows a new type of microscopes which see smaller than possible with optical lense based microscopes, by simulating what's going on based on measurements.
+- Graphics: new consumer displays will use more parallelism to make high-res displays from low-res images
+- Gaming: allows for real-time simulation rather than hardcoded scenes
+- "Digital Twins": simulated copies of physical objects allowing for cheaper stress testing
+
+A major application is AI. Most of the training of neural networks is matrix multiplication is vastly accelerated by parallel computing.
+
+
+## 1.3 Speeding up real applications
+We define **speedup** of a program running in system A vs system B as (time to run on B) / (time to run on A)
+
+The speedup of a program on a parallel system vs on a serial system depends on how much of the program can be parallelized.
+
+An important factor for how much speedup is possible is the latency of read/write operations to memory. With GPUs, we can use several techniques that use on-chip memory stores rather than DRAM, making memory accesses far faster.
