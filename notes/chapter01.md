@@ -62,3 +62,29 @@ We define **speedup** of a program running in system A vs system B as (time to r
 The speedup of a program on a parallel system vs on a serial system depends on how much of the program can be parallelized.
 
 An important factor for how much speedup is possible is the latency of read/write operations to memory. With GPUs, we can use several techniques that use on-chip memory stores rather than DRAM, making memory accesses far faster.
+
+
+## 1.4 Challenges in parallel computing
+1. Can be difficult to design a parallel algorithm with the same time complexity as its sequential counterpart.
+    - **Work efficiency** is a related concept we'll define later
+2. **Memory bound programs**: programs limited by memory access latency. Chapters 5 (Memory architecture & data latency) and 6 (Performance Considerations) introduce methods to optimize this.
+3. Data irregularity. If a dataset contains unexpectedly varying data types, some threads might take longer than others to finish. We will study methods to regularize data so that the threads take similar amounts of time to complete.
+4. Some programs require **synchronization operations** to ensure no threads are left behind/too far forward. This takes extra work not needed in sequential systems. For some parallel programs, the threads are coded so that they will almost always be in sync, without needing to be synchronized from the outside. These are sometimes called **embarrassingly parallel**.
+
+
+## 1.5 Related parallel programming interfaces
+- **OpenMP**: for shared memory multiprocessor systems
+    - Consists of a compiler and a runtime
+    - Compiler takes directives and "pragmas" about a loop, and generates parallel code
+    - Runtime executes code by managing parallel resources
+    - Originally designed for CPU execution, now supports GPUs
+- **MPI** (Message Passing Interface): for scalable cluster computing
+    - Interface for running code across several nodes, each having their own separate memory
+    - Interactions between nodes are handled by explicitly passing messages
+    - Good tool for cluster-level computing, but not as good as CUDA or OpenMP for programs on a single-GPU
+    - It's important (currently) for a parallel programmer working on large multi-GPU clusters to know how to write both MPI and CUDA. This will be covered in chapter 20 (Programming a Heterogeneous Computing Cluster)
+- **NCCL** (NVIDIA Collective Compute Library): a CUDA API for multi-GPU programming
+    - Increasing support for this
+- **OpenCL** (Open Compute Language): Standardized parallel programming model
+    - Developed by Apple, Intel, AMD/ATI, NVIDIA
+    - Very similar to CUDA
