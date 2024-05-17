@@ -9,12 +9,15 @@ Happy learning!
 
 \- Logan
 
+# Running CUDA Code
+I'll be using Google Colab to start out. Will set up an environment and put instructions here by the end of reading chapter 2.
+
 # Table of Contents
 
 0. [Preface](./notes/chapter00.md)
 1. [Intro](./notes/chapter01.md)
 ### Part I: Fundamental Concepts
-2. Heterogeneous data parallel computing
+2. [Heterogeneous data parallel computing](./notes/chapter02.md)
 3. Multidimensional grids and data
 4. Compute architecture and scheduling
 5. Memory architecture and data locality
