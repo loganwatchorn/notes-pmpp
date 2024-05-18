@@ -82,5 +82,138 @@ The new version of the function is like an outsourcing agent that
 
 The rest of this chapter will cover how to fill in the steps of the `add` function.
 
+<br>
 
 ## 2.4 Device global memory and data transfer
+On-device DRAM is called device **global** memory.
+
+### Allocating and freeing
+- `cudaMalloc(addr, size)` allocates `size` bytes on device global memory.
+    - `addr`
+        - address of a pointer variable which will be set to point to the allocated object.
+        - should be cast to `void**`, since the function expects a generic pointer
+- `cudaFree(ptr)` frees the object pointed to by `ptr`.
+
+```c
+// Example
+float *x_d;
+int size = n * sizeof(float);
+cudaMalloc((void**)&x_d, size);
+// ...
+cudaFree(x_d);
+```
+
+Pointers to device global memory such as `x_d` should not be dereferenced in host code. This leads to runtime errors.
+
+### Transferring data
+- `cudaMemcpy(dest, src, size, type)`
+    - `dest`: address of variable to copy data into
+    - `src`: address of variable to copy data from
+    - `size`: number of bytes to copy
+    - `type`:
+        - Transfers from host to device: use `cudaMemcpyHostToDevice` constant
+        - Transfers from device to host: use `cudaMemcpyDeviceToHost` constant
+
+### Error handling
+CUDA API functions return flags that indicate whether an error has occured. This book will not check for errors in the examples. The following is an example of how to handle errors.
+```c
+float* x_d;
+cudaError_t err = cudaMalloc((void**)&x_d, sizeof(float));
+if (err != cudaSuccess) {
+    printf("%s in %s at line %d\n", cudaGetErrorString(err), __FILE__, __LINE__);
+    exit(EXIT_FAILURE);
+}
+```
+
+<br>
+
+## 2.5 Kernel functions and threading
+A kernel function includes code executed by each thread separately.
+
+### Thread blocks and built-in kernel variables
+When host code calls a kernel, CUDA launches a grid of threads organized into a two-level heirarchy.
+- A grid is an array of **thread blocks**
+    - Each block is the same size
+    - All threads within a block have access to the uint variable `blockIdx`
+- Each block is a 1D, 2D, or 3D array of threads.
+    - Currently, each block may contain up to 1024 threads
+    - Host code specifies how many threads in each block
+    - For hardware efficiency, each dimension should be a multiple of 32
+        - This multiple should be chosen based on several factors discussed later
+    - Within a thread, use the uints `blockDim.x`, `blockDim.y`, and `blockDim.z` to see the dimensions of the containing block
+    - Within a thread, use the uints `threadIdx.x`, `threadIdx.y`, `threadIdx.z` to get the thread's block-wide unique index.
+
+```c
+// A thread's grid-wide unique index in a 1D block
+int i = blockDim.x * blockIdx.x + threadIdx.x;
+```
+
+<br>
+
+### Kernel, device, and host functions
+The `__global__` keyword specifies a function as a **kernel function**. These are the top-level function executed by a single thread. Called by host. Launches a grid of threads.
+```c
+__global__
+void vectorAdditionKernel(float *x, float *y, float *res, int n) {
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) {
+        res[i] = x[i] + y[i];
+    }
+}
+```
+The `__device__` keyword specifies a function as a **device function**. These run in a thread can only be called from a kernel function or another device function. Does not launch any new threads.
+
+The `__host__` keyword specifies a function as a **host function**. These run on the host and can only be called by the main thread or another host function. All non-kernel and non-device functions are host functions by default.
+
+If you precede a function with both `__device__` and `__host__`, that function will be able to run on either the device or host.
+
+<br>
+
+## 2.6 Calling kernel functions
+Use **execution configuration parameters** to set the thread block dimensions. This can be done calling the kernel function with the following syntax: 
+```c
+void hostFunc() {
+    myKernelFunc<<<numBlocks, numThreads>>>(args...);
+}
+```
+
+That's all we need to complete our code for vector addition.
+```c
+__global__
+void vecAddKernel(float *x, float *y, float *res, int n) {
+    // Applied to each element of the vector
+    // Ran separately in each GPU thread
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < n) {
+        res[i] = x[i] + y[i];
+    }
+}
+
+__host__
+void vecAdd(float *x_h, float *y_h, float *res_h, int n) {
+    int size = n * sizeof(float);
+    float *x_d, *y_d, *res_d;
+
+    // Step 1: Allocate space on device (GPU) for x, y, res
+    cudaMalloc((void**)&x_d, size);
+    cudaMalloc((void**)&y_d, size);
+    cudaMalloc((void**)&res_d, size);
+
+    // Step 2: Copy x and y from host to device
+    cudaMemcpy(x_d, x_h, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(y_d, y_h, size, cudaMemcpyHostToDevice);
+
+    // Step 3: Invoke kernel on a grid of 256-thread blocks
+    int blockSize = 256;
+    int blockCount = ceil(n / (float)blockSize);
+    vecAddKernel<<<blockCount, blockSize>>>(x_d, y_d, res_d, n);
+
+    // Step 4: Copy res from device to host
+    cudaMemcpy(res_h, res_d, size, cudaMemcpyDeviceToHost);
+
+    // Step 5: Free  memory
+    cudaFree(x_d);
+    cudaFree(y_d);
+    cudaFree(res_d);
+}
+```
