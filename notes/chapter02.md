@@ -217,3 +217,13 @@ void vecAdd(float *x_h, float *y_h, float *res_h, int n) {
     cudaFree(res_d);
 }
 ```
+
+
+<br>
+
+## 2.7 Compilation
+To compile a CUDA program, we can use **NVCC** (NVIDIA C compiler).
+
+Host code is compiled using the host's standard C/C++ compilers.
+
+Device code is compiled into **PTX** files, which contain virtual binary. PTX files are then compiled into object files for execution on NVIDIA GPUs.

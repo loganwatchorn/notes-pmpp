@@ -10,7 +10,23 @@ Happy learning!
 \- Logan
 
 # Running CUDA Code
-I'll be using Google Colab to start out. Will set up an environment and put instructions here by the end of reading chapter 2.
+I'll be using Google Colab to start out.
+
+To run a CUDA program in Colab:
+1. Change the runtime to T4 GPU (as of May 2024)
+2. Run the following in your notebook to check that NVCC & CUDA are installed. By default, the T4 GPU runtime should come with CUDA 12.
+    ```
+    !nvcc --version
+    ```
+3. Copy your .cu files to your Colab environment's file system
+4. Add a second code block where you compile your .cu files. For a simple program contained in a single file `main.cu`, linking a single library (jpeglib, for example), we can use the following:
+    ```
+    !nvcc -o main main.cu -ljpeg
+    ```
+5. Add a third code block and run your compiled executable:
+    ```
+    !./main
+    ```
 
 # Table of Contents
 
@@ -18,7 +34,7 @@ I'll be using Google Colab to start out. Will set up an environment and put inst
 1. [Intro](./notes/chapter01.md)
 ### Part I: Fundamental Concepts
 2. [Heterogeneous data parallel computing](./notes/chapter02.md)
-3. Multidimensional grids and data
+3. [Multidimensional grids and data](./notes/chapter03.md)
 4. Compute architecture and scheduling
 5. Memory architecture and data locality
 6. Performance considerations
@@ -42,3 +58,9 @@ I'll be using Google Colab to start out. Will set up an environment and put inst
 21. CUDA dynamic parallelism
 22. Advanced practices and future evolution
 23. Conclusion
+
+<br>
+
+# Sample Programs:
+- [Vector Addition](./programs/c02s06_vectorAddition.cu)
+- [RGB to Grayscale](./programs/c03s02_rgbToGrayscale.cu)
