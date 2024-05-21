@@ -75,3 +75,82 @@ unsigned int row = blockDim.y * blockIdx.y + threadIdx.y;
 unsigned int col = blockDim.x * blockIdx.x + threadIdx.x;
 unsigned int i = width*height*plane + width*row + col;
 ```
+
+<br>
+
+## 3.3 Image blur: a more complex kernel
+In many computations, certain threads need to cooperate. Image blur is one such example.
+
+Each new pixel is computed as a weighted sum of pixels in the surrounding area.
+
+This follows the **convolution** pattern.
+
+In this example, each new pixel will simply be the average of a `N`x`N` grid centered around it. The kernel is as follows.
+```c
+__host__ __device__ int max(int a, int b) {
+    if (a >= b) { return a; } else { return b; }
+}
+__host__ __device__ int min(int a, int b) {
+    if (a <= b) { return a; } else { return b; }
+}
+
+__global__
+void blurKernel(
+    unsigned char *outputImg,
+    unsigned char *inputImg,
+    int w,
+    int h,
+    int N
+) {
+    int row = blockDim.y * blockIdx.y + threadIdx.y;
+    int col = blockDim.x * blockIdx.x + threadIdx.x;
+    if (col >= w || row >= h) { return; }
+
+    int blurAreaSum = 0;
+    int blurAreaSize = 0;
+
+    for (int row2 = max(0, row-N); row2 <= min(h, row+N); row2++) {
+        for (int col2 = max(0, col-N); col2 <= min(w, col+N); col2++) {
+            blurAreaSum += inputImg[w * row2 + col2];
+            blurAreaSize++;
+        }
+    }
+
+    outputImg[w * row + col] = (unsigned char)(blurAreaSum / blurAreaSize);
+}
+```
+
+In other algorithms such as Gaussian blurring, weights differ for each pixel in the neighborhood.
+
+<br>
+
+## 3.4 Matrix multiplication
+
+**BLAS** (Basic Linear Algebra Subprograms): A standard for publishing libraries with basic linear algebra operations. Divides LinAlg operations into three **levels**.
+1. Vector operations of the form `y = a*x + y`
+
+2. Matrix-vector operations: `y = a*A*y + b*y`
+    - We will study a form of this for sparse LinAlg
+3. Matrix-matrix operations: `C = a*A*B + b*C`.
+    - We will study the case where `a==1` and `b==0`
+
+Here's a kernel for matmul:
+```c
+// C = A*B
+__global__ void matmulKernel(
+    float* A,
+    float* B,
+    float* C,
+    int N
+) {
+    int i = blockDim.y * blockIdx.y + threadIdx.y;
+    int j = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i < N && j < N) {
+        float C_ij = 0;
+        for (int k = 0; k < N; k++) {
+            C_ij += A[N*i + k] * B[N*k + j];
+        }
+        C[N*i + j] = C_ij;
+    }
+}
+```
