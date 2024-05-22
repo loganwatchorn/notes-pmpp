@@ -35,7 +35,7 @@ To run a CUDA program in Colab:
 ### Part I: Fundamental Concepts
 2. [Heterogeneous data parallel computing](./notes/chapter02.md)
 3. [Multidimensional grids and data](./notes/chapter03.md)
-4. Compute architecture and scheduling
+4. [Compute architecture and scheduling](./notes/chapter04.md)
 5. Memory architecture and data locality
 6. Performance considerations
 ### Part II: Parallel Patterns
