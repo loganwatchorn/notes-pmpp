@@ -79,4 +79,28 @@
 
 - If a block has a dimension that's not a multiple of 32, the last warp will be padded with threads that do nothing
 
-- If a block has multiple dimensions of threads, the threads are linearized in row-major order and divided into warps that way.
+- If a block has multiple dimensions of threads, the threads are linearized in row-major order before being divided into warps
+
+- **SIMD**: Single-instruction, multiple-data model
+    - A thread will not move on to the next instruction until all other threads in its same warp have also completed its current instruction
+
+- Cores in the SM are divided into **processing blocks**
+    - The number of cores per processing block differs between GPU models
+    - Ampere A100: SMs have 4 processing blocks, and 16 cores per processing block
+
+- All threads in a warp are assigned to the same processing block
+
+- There are usually fewer than 32 cores within a processing block, and yet, there are 32 threads assigned to each processing block. To make it seem like all of the threads are executing the same instruction at the same time, each core switches between threads until they're all done the instruction
+
+- The **fetch/dispatch unit** is responsible for loading the current instruction. With SIMD, since many cores execute the same instruction, there can be fewer & smaller fetch/dispatch units
+
+<br>
+
+
+## 4.5 Control divergence
+
+- SIMD execution works well when all threads in a warp follow the same control flow (if-then or if-else blocks)
+
+- **Control divergence** is when threads within the warp take different paths
+    - When this happens, the hardware passes over each path, but only the threads that are "active" in the current path will execute the current instruction
+
