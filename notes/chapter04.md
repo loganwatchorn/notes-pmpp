@@ -8,6 +8,10 @@
 7. [Resource partitioning and occupancy](#47-resource-partitioning-and-occupancy)
 8. [Querying device properties](#48-querying-device-properties)
 
+![GPU Architecture](./media/c04_gpu_architecture.jpeg)
+![SM Architecture](./media/c04_gpu_architecture_sm.png)
+
+
 
 ## 4.1 Architecture of a modern GPU
 - Each GPU has an array of **SM**s (Highly-Threaded Streaming Multiprocessors)
@@ -94,13 +98,90 @@
 
 - The **fetch/dispatch unit** is responsible for loading the current instruction. With SIMD, since many cores execute the same instruction, there can be fewer & smaller fetch/dispatch units
 
-<br>
-
 
 ## 4.5 Control divergence
 
-- SIMD execution works well when all threads in a warp follow the same control flow (if-then or if-else blocks)
+Within the same warp, if some threads follow an if-then path and some follow an if-else path, then the SM passes over each instruction in both paths, only executing the "active" threads in each path.
 
-- **Control divergence** is when threads within the warp take different paths
-    - When this happens, the hardware passes over each path, but only the threads that are "active" in the current path will execute the current instruction
+It's more efficient when all threads in the same warp follow the same control flow, because then the hardware skips the unused path.
 
+In the vector addition example, the only warp with control divergence is the one containing threads with both `i < N` and `i >= N`
+
+From the Volta architecture onward, a single warp can schedule each thread independently, so that the if-then path as well as the if-else path run concurrently.
+
+
+## 4.6 Warp scheduling and latency tolerance
+
+Multiple warps can be assigned to an SM at the same time.
+
+An SM usually has more threads assigned to it than it has cores, and so they have to multi-task.
+
+### Latency tolerance
+If a warp awaits a long-latency operation, the SM puts that warp on hold and executes another warp.
+
+If more than one warp is ready for execution, a priority mechanism is used to select one.
+
+The more threads there are assigned to a core, the more likely it is there will be a warp ready for execution.
+
+### Threads and context-switching
+A thread consists of:
+1. Sequence of instructions
+2. Current location in the sequence (PC)
+3. Current values of the variables (in memory)
+
+The **PC** (program counter) is a pointer storing the address of the current instruction.
+
+The **IR** (instruction register) stores the value of the current instruction.
+
+IR and memory hold the variables' values.
+
+A CPU can **context-switch** by saving and and restoring a thread's PC, IR, and memory to resume execution later. This costs extra processor cycles.
+
+### Zero-overhead scheduling
+An SM's on-chip memory stores the current state of each warp assigned to it, so it can schedule its cores to context-switch without needing to load/unload thread state.
+
+<br>
+
+
+## 4.7 Resource partitioning occupancy
+**Occupancy** is the ratio of warps assigned to an SM to the maximum number of warps it supports.
+
+Occupancy should be as high as possible for latency tolerance. Make sure the threads don't use too much local memory - if they do, warps will have to be moved to other SMs.
+
+[CUDA Occupancy Calculator](https://xmartlabs.github.io/cuda-calculator/) shows the occupancy given the threads per block, registers per thread, and shared memory per thread.
+
+## 4.8 Querying device properties
+To get the number of devices in the system, use the following:
+```c
+int devCount;
+cudaGetDeviceCount(&devCount);
+```
+
+Each device is numbered from `0` to `devCount-1`. To get a device's information, use
+
+```c
+cudaDeviceProp devProp;
+for (unsigned int i = 0; i < devCount; i++) {
+    cudaGetDeviceProperties(&devProp, i);
+    // Check the device properties
+}
+```
+
+`cudaDeviceProp` is a struct type with fields describing the CUDA device. ([docs](https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html))
+
+Some of the properties are as follows.
+
+```c
+int devProp.maxThreadsPerBlock;
+int devProp.multiProcessorCount; // number of SMs in the device
+int devProp.clockRate; // deprecated. Combined with # of SMs, gives approximation to max throughput
+int devProp.maxThreadsDim[0]; // max threads per block in dimension x
+int devProp.maxThreadsDim[1]; // max threads per block in dimension y
+int devProp.maxThreadsDim[2]; // max threads per block in dimension z
+int devProp.maxGridSize[0]; // max blocks per grid in dimension x
+int devProp.maxGridSize[1]; // max blocks per grid in dimension y
+int devProp.maxGridSize[2]; // max blocks per grid in dimension z
+int devProp.regsPerBlock; // number of registers in each SM
+int devProp.warpSize; // number of threads per warp
+// ... many more
+```
