@@ -1,4 +1,5 @@
 *.pdf
+*.fig
 .DS_Store
 
 exercises
