@@ -11,6 +11,7 @@
     - [Tiling](#tiling)
   - [5.4 A tiled matrix multiplication kernel](#54-a-tiled-matrix-multiplication-kernel)
   - [5.5 Boundary checks](#55-boundary-checks)
+  - [5.6 Impact of memory usage on occupancy](#56-impact-of-memory-usage-on-occupancy)
 
 <br>
 
@@ -206,5 +207,36 @@ __global__ matmul(
         __syncthreads(); // write-after-read dependence
     }
     C[i*N + j] = C_ij;
+}
+```
+
+<br>
+
+
+## 5.6 Impact of memory usage on occupancy
+
+If we assign too much shared memory to a block, we might reduce the SM's occupancy.
+
+To maximize occupancy, we can dynamically set the size of shared memory per-block in the execution configuration parameters.
+
+We might want to set this based on device properties.
+
+```c
+__global__ void matmulKernel(
+    float* A,
+    float* B,
+    float* C,
+    int N,
+    unsigned A_s_sz,
+    unsigned B_s_sz
+)
+int main() {
+    // ...
+    cudaDeviceProp devProp;
+    cudaGetDeviceProperties(&devProp, 0);
+
+    size_t size = calculateAppropriateSharedMemorySize(devProp);
+    
+    matmulKernel<<<dg, db, size>>>(/*...*/);
 }
 ```
