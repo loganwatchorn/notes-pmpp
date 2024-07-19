@@ -1,11 +1,9 @@
 # Chapter 6: Performance Considerations
 
-- [6.1: Memory coalescing](#61-memory-coalescing)
-- [6.2: Hiding memory latency](#62-hiding-memory-latency)
-- [6.3: Thread coarsening](#63-thread-coarsening)
-- [6.4: A checklist of optimizations](#64-a-checklist-of-optimizations)
-- [6.5: Knowing your computation's bottleneck](#65-knowing-your-computations-bottleneck)
-- [6.6: Summary](#66-summary)
+- [6.1 Memory coalescing](#61-memory-coalescing)
+- [6.2 Hiding memory latency](#62-hiding-memory-latency)
+- [6.3 Thread coarsening](#63-thread-coarsening)
+- [6.4 A checklist of optimizations](#64-a-checklist-of-optimizations)
 
 ## 6.1 Memory coalescing
 It takes tens of nanoseconds to evaluate whether a bit in DRAM is set or cleared - much longer than a clock cycle.
@@ -21,7 +19,85 @@ Consider matmul where A is stored in row-major, B in column-major, and C in row-
 
 
 ## 6.2 Hiding memory latency
+A DRAM consists of **banks**, which store the bits, and **channels**, which connect a DRAM port to one or more banks.
 
-In a DRAM, there are **banks** which store the data. These are served by **channels**, which are attached to several banks by a bus. A bank can only serve a single burst at a time, so it's best for each channel to be querying several banks at once. That way, they can load the burst from one bank while processing the bursts for the other banks.
+Each bank can only serve a single burst at a time, so it's best for each channel to query multiple banks simultaneously. That way, multiple banks can come up with their bursts at the same time, and the channel can return the bursts as they are completed by the banks.
 
-Let *R* be the the ratio of     
+If *R* is the ratio of cell array access latency to data transfer time, we need at least *R+1* banks to use the channel's full bandwidth.
+
+**Bank conflict** is when a channel tries to access the same bank multiple times at once. This can be avoided by having *R+1* or more banks per channel.
+
+In GPUs, the DRAM is equipped with a cache so that similar queries performed near the same time will only require one set of bursts from the banks.
+
+
+## 6.3 Thread coarsening
+Costs of parallelization with maximal granularity:
+- Redundant memory accesses by seperate blocks
+- Reduntant work performed by the threads
+- Synchronization overhead
+
+When there's too much granularity, the GPU may have to execute the threads in series. This introduces overhead and is sub-optimal to simply having fewer threads doing more work. We call this **thread coarsening**.
+
+The following is an example of thread-coarsened tiled matrix multiplication. Here, each thread block is responsible for computing `COARSE_FACTOR` tiles, and each thread computes one value for each of those tiles.
+
+```c
+#define TILE_WIDTH 32
+#define COARSE_FACTOR 4
+
+__global__ void matmul(float* A, float* B, float* C, int N) {
+    __shared__ float A_s[TILE_WIDTH][TILE_WIDTH];
+    __shared__ float B_s[TILE_WIDTH][TILE_WIDTH];
+
+    int row = blockIdx.y * TILE_WIDTH + threadIdx.y;
+    int col_first = blockIdx.x * TILE_WIDTH * COARSE_FACTOR + threadIdx.x;
+
+    // Initialize output elements
+    float C_s[COARSE_FACTOR];
+    for (int i = 0; i < COARSE_FACTOR; ++i) {
+        C_s[i] = 0.0f;
+    }
+
+    // Compute output elements in phases
+    for (int ph = 0; ph < N / TILE_WIDTH; ++ph) {
+        A_s[threadIdx.y][threadIdx.x] = A[row*N + ph*TILE_WIDTH + threadIdx.y];
+        
+        for (int i=0; i<COARSE_FACTOR; ++i) {
+            int col = col_first + i * TILE_WIDTH;
+
+            // Collaborative loading of B into shared memory
+            B_s[threadIdx.y][threadIdx.x] = B[(ph*TILE_WIDTH + threadIdx.y)*N + col];
+            __syncthreads();
+
+            for (int j=0; j<TILE_WIDTH; ++j) {
+                C_s[j] += A_s[threadIdx.y][j] * B_s[j][threadIdx.x];
+            }
+            __syncthreads();
+        }
+    }
+
+    // Load output elements to device global memory
+    for (int i=0; i<COARSE_FACTOR; ++i) {
+        int col = col_first + i * TILE_WIDTH;
+        C[row*N + col] = C_s[i];
+    }
+}
+```
+
+Be careful when thread coarsening, because it won't increase performance unless it does away with redundant work, and assigning too much work to a single thread might mean you don't use all the hardware resources.
+
+
+## 6.4 A checklist of optimizations
+- Maximize occupancy
+- Coalesce accesses to global memory
+- Minimize control divergence
+- Use tiling for reusable data
+- Privatization (covered later)
+- Thread coarsening
+
+
+## 6.5 Knowing your computation's bottlenecks
+The resource most responsible for limiting performance is what we call the bottleneck. If you make changes to optimize resources other than the bottleneck, it may in fact hurt performance. For example, introducing tiling will increase the use of shared memory and reduce calls to global memory. If the bandwidth is shared memory, than tiling will just reduce occupancy and cause worse performance. However, if global memory bandwidth is the bottleneck and SMs have shared memory to spare, than introducing tiling will help.
+
+Make use of profiling tools to find which resource is your program's bottleneck. Some popular profilers for CUDA are:
+- [NVIDIA Nsight Systems](https://developer.nvidia.com/nsight-systems)
+- [NVIDIA Nsight Compute](https://developer.nvidia.com/nsight-compute)
