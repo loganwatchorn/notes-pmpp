@@ -1,17 +1,11 @@
 # Chapter 5: Memory architecture and data locality
 
-- [Chapter 5: Memory architecture and data locality](#chapter-5-memory-architecture-and-data-locality)
-  - [5.1 Importance of memory access efficiency](#51-importance-of-memory-access-efficiency)
-  - [5.2 CUDA memory types](#52-cuda-memory-types)
-    - [Local memory](#local-memory)
-    - [Registers](#registers)
-    - [Shared memory](#shared-memory)
-    - [CUDA declarations](#cuda-declarations)
-  - [5.3 Tiling for reduced memory traffic](#53-tiling-for-reduced-memory-traffic)
-    - [Tiling](#tiling)
-  - [5.4 A tiled matrix multiplication kernel](#54-a-tiled-matrix-multiplication-kernel)
-  - [5.5 Boundary checks](#55-boundary-checks)
-  - [5.6 Impact of memory usage on occupancy](#56-impact-of-memory-usage-on-occupancy)
+- [5.1 Importance of memory access efficiency](#51-importance-of-memory-access-efficiency)
+- [5.2 CUDA memory types](#52-cuda-memory-types)
+- [5.3 Tiling for reduced memory traffic](#53-tiling-for-reduced-memory-traffic)
+- [5.4 A tiled matrix multiplication kernel](#54-a-tiled-matrix-multiplication-kernel)
+- [5.5 Boundary checks](#55-boundary-checks)
+- [5.6 Impact of memory usage on occupancy](#56-impact-of-memory-usage-on-occupancy)
 
 <br>
 

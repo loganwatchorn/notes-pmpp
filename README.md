@@ -39,7 +39,7 @@ To run a CUDA program in Colab:
 5. [Memory architecture and data locality](./notes/chapter05.md)
 6. [Performance considerations](./notes/chapter06.md)
 ### Part II: Parallel Patterns
-7. Convolution
+7. [Convolution](./notes/chapter07.md)
 8. Stencil
 9. Parallel histogram
 10. Reduction
@@ -64,3 +64,4 @@ To run a CUDA program in Colab:
 # Sample Programs:
 - [Vector Addition](./programs/c02s06_vectorAddition.cu)
 - [RGB to Grayscale](./programs/c03s02_rgbToGrayscale.cu)
+- [Thread-Coarsened Tiled Matrix Multiplication](./programs/c06s03_thread_coarsened_tiled_matmul.cu)
