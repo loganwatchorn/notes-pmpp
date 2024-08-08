@@ -5,6 +5,7 @@
 - [7.3 Constant memory and caching](#73-constant-memory-and-caching)
 - [7.4 Tiled convolution with halo cells](#74-tiled-convolution-with-halo-cells)
 - [7.5 Tiled convolution using caches for halo cells](#75-tiled-convolution-using-caches-for-halo-cells)
+- [7.6 Summary](#76-summary)
 
 ## 7.1 Background
 Convolution is an operation where each output element is computed by taking a weighted sum of nearby input elements. This can happen in one, two, or more dimensions.
@@ -146,3 +147,9 @@ __global__ void convolution_kernel_2d(
 The computational intensity of this algorithm is approximately `O(T^2 * F^2 / (T + F)) FLOP/B` where T is the width of the output tile and F is the width of the filter. Refer to page 167 for precise calculation.
 
 ## 7.5 Tiled convolution using caches for halo cells
+The halo cells of an input tile are also the internal cells of neighboring input tiles, so it is likely they will exist within a cache. Because of this, we may avoid loading them into device shared memory.
+
+## 7.6 Summary
+Some applications of convolution are Convolutional Neural Networks (Chapter 16), and grid point force computations, used in Iterative MRI Reconstruction (Chapter 17).
+
+A similar pattern, stencil (next chapter), can be used in partial differential equation solvers.
